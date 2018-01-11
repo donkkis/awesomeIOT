@@ -1,0 +1,10 @@
+{
+    "username" : "",
+    "password" : "",
+    "mapping_file" : "res/datanode_mapping.csv",
+    "shortname_dict" : {
+            "odometer" : ["odo", "km"]
+        },
+    "asset_dict" : {},
+    "base_url" : "https://my.iot-ticket.com/rest/v1"
+}
