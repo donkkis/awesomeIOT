@@ -75,11 +75,7 @@ class Wrmclient(object):
         print("Output saved to", filename)
 
     def request_data(self, location, name, start, stop):
-        location = '133353'
-        name = 'Odometer'
         dnodeid = self.get_dnodeid_by_asset_and_name(location, name)
-        #begin = '1515574010852146'
-        #end = '1515574716852146'
 
         begin_epoch = self.date_to_unix(start)
         end_epoch = self.date_to_unix(stop)
