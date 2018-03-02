@@ -1,6 +1,6 @@
 import json
-import sys
 import wrmclient
+import wrmdbclient
 import click
 import getpass
 from datetime import datetime as dt
@@ -13,6 +13,11 @@ def init_config(conf_data):
         'shortname_dict' : conf_data["shortname_dict"],
         'asset_dict' : conf_data["asset_dict"],
         'base_url' : conf_data["base_url"],
+        'db_url' : conf_data["db_url"],
+        'db_schema' : conf_data["db_schema"],
+        'db_user' : conf_data["db_user"],
+        'db_pw' : conf_data["db_pw"],
+        'db_path' : conf_data["db_path"] #unused
         }
 
 
@@ -35,11 +40,16 @@ def run(l, n, o, s, c, begin, end):
     
     tic = dt.now()
     client = wrmclient.Wrmclient(config)
+    dbclient = wrmdbclient.WrmDbClient(config)
     location, name, data = client.request_data(l, n, begin, end)
     toc = dt.now()
+    print("Query submitted in", toc-tic, ", returned", len(data), "records")
+    tic = dt.now()
     if o:
-        client.write_response_to_csv(data, l, n)
-    print("Query submitted in", toc-tic)
+        #client.write_response_to_csv(data, l, n)
+        dbclient.commit_results_to_db(data, l, n)
+    toc = dt.now()
+    print("Database write operation took", toc - tic)
 
 if  __name__ == '__main__':
     run()

@@ -1,8 +1,6 @@
 import requests
-import getpass
+import tools
 import csv
-from datetime import datetime as dt
-import time
 
 class Wrmclient(object):
     """
@@ -30,6 +28,9 @@ class Wrmclient(object):
             for row in reader:
                 self.mapping_dict[(row[0], row[2])] = row[1]
 
+        #Tool layer for timestamp conversions
+        self.tools = tools.Tools()
+    
         #Initialize session and test
         self.s = requests.Session()
         #user = input('User: ')
@@ -40,27 +41,12 @@ class Wrmclient(object):
         r = self.s.get(self.base_url, auth=(self.user, self.pw))
         print("Response from server: ", r.status_code)
 
-    def parse_unix_ts(self, timestamp):
-        return dt.fromtimestamp(timestamp/1000000)
-
-    def date_to_unix(self, date_string):
-        return time.mktime(dt.strptime(date_string, '%d.%m.%Y %H:%M:%S.%f').timetuple())
-
-    def get_dnodeid_by_asset_and_name(self, asset, name):
-        return self.mapping_dict[(asset, name)]
-
-    def get_dnode_shortname(self, name, sn_dict):
-        name = name.lower()
-        if name in sn_dict:
-            return sn_dict[name] 
-        return [name[0:5].replace(" ", ""), "null"]
-
     def write_response_to_csv(self, data, location, name):
         #build output filename from first and last datapoint timestamp and datanode shortname
-        first = self.parse_unix_ts(data[0]['ts']).strftime('%d%m%y')
-        last = self.parse_unix_ts(data[-1]['ts']).strftime('%d%m%y')
-        shortname = self.get_dnode_shortname(name, self.shortname_dict)[0]
-        unit = self.get_dnode_shortname(name, self.shortname_dict)[1]
+        first = self.tools.parse_unix_ts(data[0]['ts']).strftime('%d%m%y')
+        last = self.tools.parse_unix_ts(data[-1]['ts']).strftime('%d%m%y')
+        shortname = self.tools.get_dnode_shortname(name, self.shortname_dict)[0]
+        unit = self.tools.get_dnode_shortname(name, self.shortname_dict)[1]
 
         filename = "output/"+shortname+"_"+first+"_"+last+".csv"
                                 
@@ -68,17 +54,18 @@ class Wrmclient(object):
             print('Location,Name,Value,Unit,Timestamp')
             print('Location,Name,Value,Unit,Timestamp', file=out)
             for entry in data:
-                date = self.parse_unix_ts(entry['ts']).strftime('%d.%m.%Y %H:%M:%S.%f')
+                date = self.tools.parse_unix_ts(entry['ts']).strftime('%d.%m.%Y %H:%M:%S.%f')
                 value = entry['v']
                 print(location, name, value, unit, date, sep=',')
                 print(location, name, value, unit, date, sep=',', file=out)
-        print("Output saved to", filename)
+        print("Output saved to", filename)        
+
 
     def request_data(self, location, name, start, stop):
-        dnodeid = self.get_dnodeid_by_asset_and_name(location, name)
+        dnodeid = self.tools.get_dnodeid_by_asset_and_name(self.mapping_dict,location, name)
 
-        begin_epoch = self.date_to_unix(start)
-        end_epoch = self.date_to_unix(stop)
+        begin_epoch = self.tools.date_to_unix(start)
+        end_epoch = self.tools.date_to_unix(stop)
         begin = int(begin_epoch*1000000)
         end = int(end_epoch*1000000)
 
